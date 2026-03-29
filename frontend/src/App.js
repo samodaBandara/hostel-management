@@ -1,32 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Students from './pages/Students';
-import Rooms from './pages/Room';
-import Allocations from './pages/Allocations';
-import Payments from './pages/Payments';
-import Complaints from './pages/Complaints';
-import Login from './pages/Login';
+import Dashboard      from './pages/Dashboard';
+import Students       from './pages/Students';
+import Rooms          from './pages/Room';
+import Allocations    from './pages/Allocations';
+import Payments       from './pages/Payments';
+import Complaints     from './pages/Complaints';
+import Login          from './pages/Login';
+import RoomPreferences from './pages/RoomPreference';
 import './App.css';
 
 const NAV = {
   admin: [
-    { to: '/',            label: 'Dashboard',   icon: '▣' },
-    { to: '/students',    label: 'Students',     icon: '👤' },
-    { to: '/rooms',       label: 'Rooms',        icon: '🏠' },
-    { to: '/allocations', label: 'Allocations',  icon: '🔗' },
-    { to: '/payments',    label: 'Payments',     icon: '💳' },
-    { to: '/complaints',  label: 'Complaints',   icon: '📋' },
+    { to: '/',            label: 'Dashboard',        icon: '▣'  },
+    { to: '/students',    label: 'Students',          icon: '👤' },
+    { to: '/rooms',       label: 'Rooms',             icon: '🏠' },
+    { to: '/allocations', label: 'Allocations',       icon: '🔗' },
+    { to: '/payments',    label: 'Payments',          icon: '💳' },
+    { to: '/complaints',  label: 'Complaints',        icon: '📋' },
   ],
   staff: [
-    { to: '/',           label: 'Dashboard',  icon: '▣' },
+    { to: '/',           label: 'Dashboard',  icon: '▣'  },
     { to: '/rooms',      label: 'Rooms',      icon: '🏠' },
     { to: '/complaints', label: 'Complaints', icon: '📋' },
   ],
   student: [
-    { to: '/',           label: 'Dashboard',  icon: '▣' },
-    { to: '/payments',   label: 'Payments',   icon: '💳' },
-    { to: '/complaints', label: 'Complaints', icon: '📋' },
+    { to: '/',            label: 'Dashboard',        icon: '▣'  },
+    { to: '/preferences', label: 'Room Preferences', icon: '📝' },
+    { to: '/payments',    label: 'Payments',         icon: '💳' },
+    { to: '/complaints',  label: 'Complaints',       icon: '📋' },
   ],
 };
 
@@ -39,15 +41,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const handleLogin = (userData) => {
-    localStorage.setItem('hms_user', JSON.stringify(userData));
-    setUser(userData);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('hms_user');
-    setUser(null);
-  };
+  const handleLogin  = (userData) => { localStorage.setItem('hms_user', JSON.stringify(userData)); setUser(userData); };
+  const handleLogout = ()         => { localStorage.removeItem('hms_user'); setUser(null); };
 
   if (!user) return <Login onLogin={handleLogin} />;
 
@@ -103,11 +98,12 @@ export default function App() {
           <main className="main-content">
             <Routes>
               <Route path="/"            element={<Dashboard />} />
-              <Route path="/students"    element={user.role === 'admin' ? <Students />    : <Navigate to="/" />} />
-              <Route path="/rooms"       element={user.role !== 'student' ? <Rooms />     : <Navigate to="/" />} />
-              <Route path="/allocations" element={user.role === 'admin' ? <Allocations /> : <Navigate to="/" />} />
+              <Route path="/students"    element={user.role === 'admin'   ? <Students />    : <Navigate to="/" />} />
+              <Route path="/rooms"       element={user.role !== 'student' ? <Rooms />       : <Navigate to="/" />} />
+              <Route path="/allocations" element={user.role === 'admin'   ? <Allocations /> : <Navigate to="/" />} />
               <Route path="/payments"    element={<Payments user={user} />} />
               <Route path="/complaints"  element={<Complaints user={user} />} />
+              <Route path="/preferences" element={user.role === 'student' ? <RoomPreferences user={user} /> : <Navigate to="/" />} />
             </Routes>
           </main>
         </div>
