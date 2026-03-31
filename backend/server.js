@@ -45,11 +45,11 @@ function ensureMonthlyFee(student_id, month) {
     WHERE a.student_id = ? LIMIT 1
   `, [student_id]);
   if (!alloc.length) return; // no room, no fee
-  const amount   = getFeeForRoomType(alloc[0].room_type);
+  const amount = getFeeForRoomType(alloc[0].room_type);
   const due_date = getDueDate(month);
-  const now      = new Date();
-  const dueDate  = new Date(due_date);
-  const status   = now > dueDate ? 'overdue' : 'unpaid';
+  const now = new Date();
+  const dueDate = new Date(due_date);
+  const status = now > dueDate ? 'overdue' : 'unpaid';
   run(`INSERT OR IGNORE INTO monthly_fees (student_id, room_id, month, amount, status, due_date) VALUES (?,?,?,?,?,?)`,
     [student_id, alloc[0].room_id, month, amount, status, due_date]);
 }
@@ -62,14 +62,14 @@ app.get('/api/students', (req, res) => {
 
 app.post('/api/students', (req, res) => {
   const { full_name, email, phone, gender, address, username, password } = req.body;
-  if (!full_name || !email)             return res.status(400).json({ error: 'Name and email are required' });
-  if (!username)                        return res.status(400).json({ error: 'Username is required' });
+  if (!full_name || !email) return res.status(400).json({ error: 'Name and email are required' });
+  if (!username) return res.status(400).json({ error: 'Username is required' });
   if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
   const existing = query('SELECT student_id FROM students WHERE username=?', [username]);
   if (existing.length) return res.status(400).json({ error: 'Username already taken' });
   try {
     const id = run('INSERT INTO students (full_name, email, phone, gender, address, username, password) VALUES (?,?,?,?,?,?,?)',
-      [full_name, email, phone||'', gender||'', address||'', username, password]);
+      [full_name, email, phone || '', gender || '', address || '', username, password]);
     res.status(201).json({ student_id: id, message: 'Student created' });
   } catch { res.status(400).json({ error: 'Email already exists' }); }
 });
@@ -82,10 +82,10 @@ app.put('/api/students/:id', (req, res) => {
   }
   if (password && password.length >= 6) {
     run('UPDATE students SET full_name=?,email=?,phone=?,gender=?,address=?,username=?,password=? WHERE student_id=?',
-      [full_name, email, phone||'', gender||'', address||'', username, password, req.params.id]);
+      [full_name, email, phone || '', gender || '', address || '', username, password, req.params.id]);
   } else {
     run('UPDATE students SET full_name=?,email=?,phone=?,gender=?,address=?,username=? WHERE student_id=?',
-      [full_name, email, phone||'', gender||'', address||'', username, req.params.id]);
+      [full_name, email, phone || '', gender || '', address || '', username, req.params.id]);
   }
   res.json({ message: 'Updated' });
 });
@@ -104,7 +104,7 @@ app.post('/api/rooms', (req, res) => {
   if (!room_number || !capacity) return res.status(400).json({ error: 'Room number and capacity required' });
   try {
     const id = run('INSERT INTO rooms (room_number,room_type,capacity,status,floor) VALUES (?,?,?,?,?)',
-      [room_number, room_type, capacity, status||'available', floor||1]);
+      [room_number, room_type, capacity, status || 'available', floor || 1]);
     res.status(201).json({ room_id: id, message: 'Room created' });
   } catch { res.status(400).json({ error: 'Room number already exists' }); }
 });
@@ -112,7 +112,7 @@ app.post('/api/rooms', (req, res) => {
 app.put('/api/rooms/:id', (req, res) => {
   const { room_number, room_type, capacity, status, floor } = req.body;
   run('UPDATE rooms SET room_number=?,room_type=?,capacity=?,status=?,floor=? WHERE room_id=?',
-    [room_number, room_type, capacity, status, floor||1, req.params.id]);
+    [room_number, room_type, capacity, status, floor || 1, req.params.id]);
   res.json({ message: 'Updated' });
 });
 
@@ -136,10 +136,10 @@ app.post('/api/allocations', (req, res) => {
   if (room[0].status === 'occupied') return res.status(400).json({ error: 'Room is occupied' });
   const count = query('SELECT COUNT(*) as c FROM allocations WHERE room_id=?', [room_id])[0].c;
   if (count >= room[0].capacity) return res.status(400).json({ error: 'Room full' });
-  const studentRows  = query('SELECT gender FROM students WHERE student_id=?', [student_id]);
+  const studentRows = query('SELECT gender FROM students WHERE student_id=?', [student_id]);
   const gender = studentRows[0]?.gender?.toLowerCase();
-  const floor  = room[0].floor || 1;
-  const GIRLS_FLOORS = [1,2,3,4,5], BOYS_FLOORS = [6,7,8,9,10];
+  const floor = room[0].floor || 1;
+  const GIRLS_FLOORS = [1, 2, 3, 4, 5], BOYS_FLOORS = [6, 7, 8, 9, 10];
   if (gender === 'female' && BOYS_FLOORS.includes(floor))
     return res.status(400).json({ error: 'Cannot allocate female student to Boys Building (Floors 6-10)' });
   if (gender === 'male' && GIRLS_FLOORS.includes(floor))
@@ -173,8 +173,8 @@ app.post('/api/payments', (req, res) => {
   const id = run(
     `INSERT INTO payments (student_id, amount, payment_date, status, method, card_last4, card_name, receipt_filename, receipt_data)
      VALUES (?,?,?,?,?,?,?,?,?)`,
-    [student_id, amount, payment_date, status||'pending_verification', method||'manual',
-     card_last4||null, card_name||null, receipt_filename||null, receipt_data||null]
+    [student_id, amount, payment_date, status || 'pending_verification', method || 'manual',
+      card_last4 || null, card_name || null, receipt_filename || null, receipt_data || null]
   );
   // Always link to current month fee record
   const targetMonth = month || getCurrentMonth();
@@ -185,7 +185,7 @@ app.post('/api/payments', (req, res) => {
 
 app.put('/api/payments/:id', (req, res) => {
   const { status, note } = req.body;
-  run('UPDATE payments SET status=?, admin_note=? WHERE payment_id=?', [status, note||null, req.params.id]);
+  run('UPDATE payments SET status=?, admin_note=? WHERE payment_id=?', [status, note || null, req.params.id]);
   // If marked received, update monthly fee by student_id for current month
   if (status === 'received') {
     const p = query('SELECT * FROM payments WHERE payment_id=?', [req.params.id]);
@@ -229,7 +229,7 @@ app.get('/api/fees/student/:student_id', (req, res) => {
 app.get('/api/fees/pending', (req, res) => {
   // Ensure current month fees exist for all CURRENTLY allocated students
   // Only create for students that actually exist in students table
-  const month    = getCurrentMonth();
+  const month = getCurrentMonth();
   const students = query(`
     SELECT DISTINCT a.student_id FROM allocations a
     WHERE a.student_id IN (SELECT student_id FROM students)
@@ -250,20 +250,20 @@ app.get('/api/fees/pending', (req, res) => {
 
 // GET fee summary (admin dashboard)
 app.get('/api/fees/summary', (req, res) => {
-  const month    = getCurrentMonth();
+  const month = getCurrentMonth();
   const students = query(`
     SELECT DISTINCT a.student_id FROM allocations a
     WHERE a.student_id IN (SELECT student_id FROM students)
   `);
   students.forEach(s => ensureMonthlyFee(s.student_id, month));
   res.json({
-    current_month:   month,
-    total_expected:  query(`SELECT SUM(amount) as s FROM monthly_fees WHERE month=?`, [month])[0].s || 0,
-    total_paid:      query(`SELECT SUM(amount) as s FROM monthly_fees WHERE month=? AND status='paid'`, [month])[0].s || 0,
-    total_unpaid:    query(`SELECT SUM(amount) as s FROM monthly_fees WHERE month=? AND status!='paid'`, [month])[0].s || 0,
-    paid_count:      query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status='paid'`, [month])[0].c,
-    unpaid_count:    query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status='unpaid'`, [month])[0].c,
-    overdue_count:   query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status='overdue'`, [month])[0].c,
+    current_month: month,
+    total_expected: query(`SELECT SUM(amount) as s FROM monthly_fees WHERE month=?`, [month])[0].s || 0,
+    total_paid: query(`SELECT SUM(amount) as s FROM monthly_fees WHERE month=? AND status='paid'`, [month])[0].s || 0,
+    total_unpaid: query(`SELECT SUM(amount) as s FROM monthly_fees WHERE month=? AND status!='paid'`, [month])[0].s || 0,
+    paid_count: query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status='paid'`, [month])[0].c,
+    unpaid_count: query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status='unpaid'`, [month])[0].c,
+    overdue_count: query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status='overdue'`, [month])[0].c,
   });
 });
 
@@ -307,11 +307,11 @@ app.post('/api/preferences', (req, res) => {
   const existing = query('SELECT pref_id FROM room_preferences WHERE student_id=?', [student_id]);
   if (existing.length) {
     run(`UPDATE room_preferences SET sleep_time=?,wake_time=?,study_habit=?,cleanliness=?,noise_tolerance=?,social_pref=?,room_type_pref=?,extra_notes=? WHERE student_id=?`,
-      [sleep_time, wake_time, study_habit, cleanliness, noise_tolerance, social_pref, room_type_pref, extra_notes||'', student_id]);
+      [sleep_time, wake_time, study_habit, cleanliness, noise_tolerance, social_pref, room_type_pref, extra_notes || '', student_id]);
     res.json({ message: 'Preferences updated' });
   } else {
     const id = run(`INSERT INTO room_preferences (student_id,sleep_time,wake_time,study_habit,cleanliness,noise_tolerance,social_pref,room_type_pref,extra_notes) VALUES (?,?,?,?,?,?,?,?,?)`,
-      [student_id, sleep_time, wake_time, study_habit, cleanliness, noise_tolerance, social_pref, room_type_pref, extra_notes||'']);
+      [student_id, sleep_time, wake_time, study_habit, cleanliness, noise_tolerance, social_pref, room_type_pref, extra_notes || '']);
     res.status(201).json({ pref_id: id, message: 'Preferences saved' });
   }
 });
@@ -321,12 +321,12 @@ app.post('/api/preferences', (req, res) => {
 app.post('/api/ai-suggest-room', (req, res) => {
   const { student_id } = req.body;
   if (!student_id) return res.status(400).json({ error: 'Student ID required' });
-  const prefRows   = query('SELECT * FROM room_preferences WHERE student_id=?', [student_id]);
+  const prefRows = query('SELECT * FROM room_preferences WHERE student_id=?', [student_id]);
   if (!prefRows.length) return res.json({ reason: 'no_prefs' });
   const studentPrefs = prefRows[0];
-  const studentRow   = query('SELECT gender FROM students WHERE student_id=?', [student_id]);
-  const gender       = studentRow[0]?.gender?.toLowerCase();
-  const GIRLS_FLOORS = [1,2,3,4,5], BOYS_FLOORS = [6,7,8,9,10];
+  const studentRow = query('SELECT gender FROM students WHERE student_id=?', [student_id]);
+  const gender = studentRow[0]?.gender?.toLowerCase();
+  const GIRLS_FLOORS = [1, 2, 3, 4, 5], BOYS_FLOORS = [6, 7, 8, 9, 10];
   let floorFilter = '';
   if (gender === 'female') floorFilter = `AND r.floor IN (${GIRLS_FLOORS.join(',')})`;
   else if (gender === 'male') floorFilter = `AND r.floor IN (${BOYS_FLOORS.join(',')})`;
@@ -338,19 +338,21 @@ app.post('/api/ai-suggest-room', (req, res) => {
   `);
   const roomsWithOccupants = availableRooms.map(room => {
     const occupants = query(`SELECT s.student_id, s.full_name FROM allocations a JOIN students s ON a.student_id=s.student_id WHERE a.room_id=?`, [room.room_id]);
-    return { room_id: room.room_id, room_number: room.room_number, room_type: room.room_type,
+    return {
+      room_id: room.room_id, room_number: room.room_number, room_type: room.room_type,
       capacity: room.capacity, slots_free: room.capacity - room.occupied_count,
-      occupants: occupants.map(o => { const prefs = query('SELECT * FROM room_preferences WHERE student_id=?', [o.student_id]); return { name: o.full_name, preferences: prefs[0]||null }; }) };
+      occupants: occupants.map(o => { const prefs = query('SELECT * FROM room_preferences WHERE student_id=?', [o.student_id]); return { name: o.full_name, preferences: prefs[0] || null }; })
+    };
   });
   try {
     const scores = scoreRoomsForStudent(studentPrefs, roomsWithOccupants);
     const top = scores[0], second = scores[1];
     res.json({
-      recommended_room: top?.room_number||null, compatibility_score: top?.compatibility_score||0,
-      reason: top?.reason||'No rooms available', room_type: top?.room_type||null,
-      slots_free: top?.slots_free||0, occupant_scores: top?.occupant_scores||[],
-      alternative_room: second?.room_number||null, alternative_score: second?.compatibility_score||0,
-      all_scores: scores.slice(0,5).map(s => ({ room: s.room_number, score: s.compatibility_score, compatible: s.compatible })),
+      recommended_room: top?.room_number || null, compatibility_score: top?.compatibility_score || 0,
+      reason: top?.reason || 'No rooms available', room_type: top?.room_type || null,
+      slots_free: top?.slots_free || 0, occupant_scores: top?.occupant_scores || [],
+      alternative_room: second?.room_number || null, alternative_score: second?.compatibility_score || 0,
+      all_scores: scores.slice(0, 5).map(s => ({ room: s.room_number, score: s.compatibility_score, compatible: s.compatible })),
     });
   } catch (err) { res.status(500).json({ error: 'Scoring failed' }); }
 });
@@ -359,11 +361,11 @@ app.post('/api/ai-suggest-room', (req, res) => {
 
 function classifyReason(reason) {
   const r = reason.toLowerCase();
-  if (r.match(/noise|noisy|loud|sound|disturb/))               return 'noise';
-  if (r.match(/clean|dirty|mess|hygiene|smell/))               return 'cleanliness';
-  if (r.match(/medical|health|allerg|privacy|personal/))       return 'medical';
-  if (r.match(/habit|sleep|study|schedule|incompatib/))        return 'habits';
-  if (r.match(/far|distance|floor|location|close|near/))       return 'distance';
+  if (r.match(/noise|noisy|loud|sound|disturb/)) return 'noise';
+  if (r.match(/clean|dirty|mess|hygiene|smell/)) return 'cleanliness';
+  if (r.match(/medical|health|allerg|privacy|personal/)) return 'medical';
+  if (r.match(/habit|sleep|study|schedule|incompatib/)) return 'habits';
+  if (r.match(/far|distance|floor|location|close|near/)) return 'distance';
   return 'other';
 }
 
@@ -400,18 +402,18 @@ app.post('/api/transfers', (req, res) => {
   if (existing.length) return res.status(400).json({ error: 'A pending transfer request already exists' });
   const category = classifyReason(reason);
   const id = run(`INSERT INTO transfer_requests (student_id, from_room_id, reason, reason_category, status, initiated_by) VALUES (?,?,?,?,?,?)`,
-    [student_id, alloc[0].room_id, reason, category, 'pending', initiated_by||'student']);
+    [student_id, alloc[0].room_id, reason, category, 'pending', initiated_by || 'student']);
   res.status(201).json({ transfer_id: id, reason_category: category, message: 'Transfer request submitted' });
 });
 
 app.post('/api/transfers/suggest', (req, res) => {
   const { student_id, reason } = req.body;
   if (!student_id || !reason) return res.status(400).json({ error: 'Required fields missing' });
-  const category   = classifyReason(reason);
-  const prefRows   = query('SELECT * FROM room_preferences WHERE student_id=?', [student_id]);
+  const category = classifyReason(reason);
+  const prefRows = query('SELECT * FROM room_preferences WHERE student_id=?', [student_id]);
   const studentRow = query('SELECT gender FROM students WHERE student_id=?', [student_id]);
-  const gender     = studentRow[0]?.gender?.toLowerCase();
-  const GIRLS_FLOORS = [1,2,3,4,5], BOYS_FLOORS = [6,7,8,9,10];
+  const gender = studentRow[0]?.gender?.toLowerCase();
+  const GIRLS_FLOORS = [1, 2, 3, 4, 5], BOYS_FLOORS = [6, 7, 8, 9, 10];
   let floorFilter = '';
   if (gender === 'female') floorFilter = `AND r.floor IN (${GIRLS_FLOORS.join(',')})`;
   else if (gender === 'male') floorFilter = `AND r.floor IN (${BOYS_FLOORS.join(',')})`;
@@ -425,28 +427,30 @@ app.post('/api/transfers/suggest', (req, res) => {
   `);
   const roomsWithOccupants = availableRooms.map(room => {
     const occupants = query(`SELECT s.student_id, s.full_name FROM allocations a JOIN students s ON a.student_id=s.student_id WHERE a.room_id=?`, [room.room_id]);
-    return { room_id: room.room_id, room_number: room.room_number, room_type: room.room_type,
+    return {
+      room_id: room.room_id, room_number: room.room_number, room_type: room.room_type,
       capacity: room.capacity, slots_free: room.capacity - room.occupied_count,
-      occupants: occupants.map(o => { const prefs = query('SELECT * FROM room_preferences WHERE student_id=?', [o.student_id]); return { name: o.full_name, preferences: prefs[0]||null }; }) };
+      occupants: occupants.map(o => { const prefs = query('SELECT * FROM room_preferences WHERE student_id=?', [o.student_id]); return { name: o.full_name, preferences: prefs[0] || null }; })
+    };
   });
   let studentPrefs = prefRows[0] || {};
-  if (category === 'noise')       studentPrefs = { ...studentPrefs, noise_tolerance: 'silent' };
+  if (category === 'noise') studentPrefs = { ...studentPrefs, noise_tolerance: 'silent' };
   if (category === 'cleanliness') studentPrefs = { ...studentPrefs, cleanliness: 'very_clean' };
-  if (category === 'medical')     studentPrefs = { ...studentPrefs, room_type_pref: 'single', social_pref: 'introvert' };
+  if (category === 'medical') studentPrefs = { ...studentPrefs, room_type_pref: 'single', social_pref: 'introvert' };
   try {
     let scores = roomsWithOccupants.length > 0 ? scoreRoomsForStudent(studentPrefs, roomsWithOccupants) : [];
-    if (category === 'distance') scores = scores.sort((a,b) => parseInt(a.room_number?.match(/\d+/)?.[0]||99) - parseInt(b.room_number?.match(/\d+/)?.[0]||99));
-    if (category === 'medical') { const singles = scores.filter(s => s.room_type==='single'); if (singles.length) scores = singles; }
+    if (category === 'distance') scores = scores.sort((a, b) => parseInt(a.room_number?.match(/\d+/)?.[0] || 99) - parseInt(b.room_number?.match(/\d+/)?.[0] || 99));
+    if (category === 'medical') { const singles = scores.filter(s => s.room_type === 'single'); if (singles.length) scores = singles; }
     const top = scores[0], second = scores[1];
-    const LABELS = { noise:'Noise Issues', cleanliness:'Cleanliness Issues', medical:'Medical / Privacy', habits:'Incompatible Habits', distance:'Location / Distance', other:'General Transfer' };
+    const LABELS = { noise: 'Noise Issues', cleanliness: 'Cleanliness Issues', medical: 'Medical / Privacy', habits: 'Incompatible Habits', distance: 'Location / Distance', other: 'General Transfer' };
     res.json({
-      category, category_label: LABELS[category]||'General',
-      recommended_room: top?.room_number||null, recommended_room_id: top?.room_id||null,
-      compatibility_score: top?.compatibility_score||0, reason: top?.reason||'No rooms available',
-      room_type: top?.room_type||null,
-      alternative_room: second?.room_number||null, alternative_room_id: second?.room_id||null,
-      alternative_score: second?.compatibility_score||0,
-      all_scores: scores.slice(0,5).map(s => ({ room: s.room_number, room_id: s.room_id, score: s.compatibility_score, type: s.room_type })),
+      category, category_label: LABELS[category] || 'General',
+      recommended_room: top?.room_number || null, recommended_room_id: top?.room_id || null,
+      compatibility_score: top?.compatibility_score || 0, reason: top?.reason || 'No rooms available',
+      room_type: top?.room_type || null,
+      alternative_room: second?.room_number || null, alternative_room_id: second?.room_id || null,
+      alternative_score: second?.compatibility_score || 0,
+      all_scores: scores.slice(0, 5).map(s => ({ room: s.room_number, room_id: s.room_id, score: s.compatibility_score, type: s.room_type })),
     });
   } catch (err) { res.status(500).json({ error: 'Suggestion failed' }); }
 });
@@ -456,7 +460,7 @@ app.put('/api/transfers/:id/approve', (req, res) => {
   if (!to_room_id) return res.status(400).json({ error: 'Target room required' });
   const transfer = query('SELECT * FROM transfer_requests WHERE transfer_id=?', [req.params.id]);
   if (!transfer.length) return res.status(404).json({ error: 'Transfer not found' });
-  const t    = transfer[0];
+  const t = transfer[0];
   const room = query('SELECT * FROM rooms WHERE room_id=?', [to_room_id]);
   if (!room.length) return res.status(404).json({ error: 'Room not found' });
   const count = query('SELECT COUNT(*) as c FROM allocations WHERE room_id=?', [to_room_id])[0].c;
@@ -466,16 +470,16 @@ app.put('/api/transfers/:id/approve', (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   run('INSERT INTO allocations (student_id, room_id, allocation_date) VALUES (?,?,?)', [t.student_id, to_room_id, today]);
   if (count + 1 >= room[0].capacity) run("UPDATE rooms SET status='occupied' WHERE room_id=?", [to_room_id]);
-  run(`UPDATE transfer_requests SET status='approved', to_room_id=?, admin_note=?, resolved_at=datetime('now') WHERE transfer_id=?`, [to_room_id, admin_note||'', req.params.id]);
+  run(`UPDATE transfer_requests SET status='approved', to_room_id=?, admin_note=?, resolved_at=datetime('now') WHERE transfer_id=?`, [to_room_id, admin_note || '', req.params.id]);
   run(`INSERT INTO transfer_history (student_id, from_room_id, to_room_id, reason, reason_category, initiated_by, admin_note) VALUES (?,?,?,?,?,?,?)`,
-    [t.student_id, t.from_room_id, to_room_id, t.reason, t.reason_category, t.initiated_by, admin_note||'']);
+    [t.student_id, t.from_room_id, to_room_id, t.reason, t.reason_category, t.initiated_by, admin_note || '']);
   // Update monthly fee for new room
   ensureMonthlyFee(t.student_id, getCurrentMonth());
   res.json({ message: 'Transfer approved' });
 });
 
 app.put('/api/transfers/:id/reject', (req, res) => {
-  run(`UPDATE transfer_requests SET status='rejected', admin_note=?, resolved_at=datetime('now') WHERE transfer_id=?`, [req.body.admin_note||'', req.params.id]);
+  run(`UPDATE transfer_requests SET status='rejected', admin_note=?, resolved_at=datetime('now') WHERE transfer_id=?`, [req.body.admin_note || '', req.params.id]);
   res.json({ message: 'Transfer rejected' });
 });
 
@@ -489,16 +493,16 @@ app.delete('/api/transfers/:id', (req, res) => {
 app.get('/api/dashboard', (req, res) => {
   const month = getCurrentMonth();
   res.json({
-    totalStudents:     query('SELECT COUNT(*) as c FROM students')[0].c,
-    availableRooms:    query("SELECT COUNT(*) as c FROM rooms WHERE status='available'")[0].c,
-    occupiedRooms:     query("SELECT COUNT(*) as c FROM rooms WHERE status='occupied'")[0].c,
-    totalRooms:        query('SELECT COUNT(*) as c FROM rooms')[0].c,
+    totalStudents: query('SELECT COUNT(*) as c FROM students')[0].c,
+    availableRooms: query("SELECT COUNT(*) as c FROM rooms WHERE status='available'")[0].c,
+    occupiedRooms: query("SELECT COUNT(*) as c FROM rooms WHERE status='occupied'")[0].c,
+    totalRooms: query('SELECT COUNT(*) as c FROM rooms')[0].c,
     pendingComplaints: query("SELECT COUNT(*) as c FROM complaints WHERE status='pending'")[0].c,
-    totalPayments:     query('SELECT COUNT(*) as c FROM payments')[0].c,
-    totalRevenue:      query("SELECT SUM(amount) as s FROM payments WHERE status='received'")[0].s || 0,
-    pendingTransfers:  query("SELECT COUNT(*) as c FROM transfer_requests WHERE status='pending'")[0].c,
-    unpaidFees:        query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status!='paid'`, [month])[0].c,
-    overdueFeesAmt:    query(`SELECT SUM(amount) as s FROM monthly_fees WHERE status='overdue'`)[0].s || 0,
+    totalPayments: query('SELECT COUNT(*) as c FROM payments')[0].c,
+    totalRevenue: query("SELECT SUM(amount) as s FROM payments WHERE status='received'")[0].s || 0,
+    pendingTransfers: query("SELECT COUNT(*) as c FROM transfer_requests WHERE status='pending'")[0].c,
+    unpaidFees: query(`SELECT COUNT(*) as c FROM monthly_fees WHERE month=? AND status!='paid'`, [month])[0].c,
+    overdueFeesAmt: query(`SELECT SUM(amount) as s FROM monthly_fees WHERE status='overdue'`)[0].s || 0,
   });
 });
 

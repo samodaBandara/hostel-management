@@ -113,13 +113,13 @@ function buildReason(studentPrefs, room, occupantScores, baseScore, finalScore) 
     }
     if (social === 'introvert' && cap >= 4) {
       reason += ` — note: large room may not suit an introvert`;
-    }
+    } 
   }
 
   return reason;
 }
 
-// ── Main export: predict single pair compatibility ────────────
+// ── Main export: predict single pair compatibility 
 function predictCompatibility(studentPrefs, roommatePrefs) {
   const { best_k, encoders, X_train, y_train } = loadModel();
   const aFeatures  = encodePreferences(studentPrefs, encoders, 'a');

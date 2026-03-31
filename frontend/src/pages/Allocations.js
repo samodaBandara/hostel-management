@@ -470,7 +470,7 @@ export default function Allocations() {
                 { label: 'Available', val: girlsCap - girlsOccupied,    color: '#10b981', bg: '#ecfdf5', bd: '#6ee7b7' },
               ].map(s => (
                 <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.bd}`, borderRadius: 7, padding: '8px 10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: s.color, fontFamily: 'var(--font-mono)' }}>{s.val}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: s.color, fontFamily: 'var(--font-mono)' }}>{s.val}</div>
                   <div style={{ fontSize: 9, color: s.color, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
                 </div>
               ))}
