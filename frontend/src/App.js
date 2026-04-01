@@ -9,6 +9,7 @@ import Complaints     from './pages/Complaints';
 import Login          from './pages/Login';
 import RoomPreferences from './pages/RoomPreference';
 import TransferRequests from './pages/TransferRequests';
+import VisitorLog from './pages/VisitorLog';
 import './App.css';
 
 const NAV = {
@@ -20,11 +21,13 @@ const NAV = {
     { to: '/payments',    label: 'Payments',          icon: '💳' },
     { to: '/complaints',  label: 'Complaints',        icon: '📋' },
     { to: '/transfers', label: 'Transfers', icon: '🔄' },
+    { to: '/visitors', label: 'Visitors', icon: '👥' },
   ],
   staff: [
     { to: '/',           label: 'Dashboard',  icon: '▣'  },
     { to: '/rooms',      label: 'Rooms',      icon: '🏠' },
     { to: '/complaints', label: 'Complaints', icon: '📋' },
+    { to: '/visitors', label: 'Visitors', icon: '👥' },
   ],
   student: [
     { to: '/',            label: 'Dashboard',        icon: '▣'  },
@@ -32,6 +35,7 @@ const NAV = {
     { to: '/payments',    label: 'Payments',         icon: '💳' },
     { to: '/complaints',  label: 'Complaints',       icon: '📋' },
     { to: '/transfers', label: 'Transfer Room', icon: '🔄' },
+    { to: '/visitors', label: 'My Visitors', icon: '👋' },
   ],
 };
 
@@ -107,6 +111,7 @@ export default function App() {
               <Route path="/payments"    element={<Payments user={user} />} />
               <Route path="/complaints"  element={<Complaints user={user} />} />
               <Route path="/transfers" element={<TransferRequests user={user} />} />
+              <Route path="/visitors" element={<VisitorLog user={user} />} />
               <Route path="/preferences" element={user.role === 'student' ? <RoomPreferences user={user} /> : <Navigate to="/" />} />
             </Routes>
           </main>

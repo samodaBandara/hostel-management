@@ -295,6 +295,118 @@ function StudentPayments({ user }) {
   );
 }
 
+
+// ── FEE SCHEDULE EDITOR (admin) ───────────────────────────────
+function FeeScheduleEditor() {
+  const [schedule, setSchedule] = useState([]);
+  const [editing, setEditing]   = useState({}); // room_type -> amount
+  const [saving, setSaving]     = useState('');
+  const [msg, setMsg]           = useState('');
+
+  const load = () => {
+    axios.get(`${API}/fees/schedule`).then(r => {
+      setSchedule(r.data);
+      const map = {};
+      r.data.forEach(s => { map[s.room_type] = s.monthly_fee; });
+      setEditing(map);
+    }).catch(() => {
+      // fallback defaults if table not yet populated
+      setEditing({ single: 10000, shared: 5000, double: 2500 });
+    });
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const save = async (room_type) => {
+    const amount = parseInt(editing[room_type]);
+    if (!amount || amount < 0) return;
+    setSaving(room_type);
+    try {
+      await axios.put(`${API}/fees/schedule/${room_type}`, { monthly_fee: amount });
+      setMsg(`${room_type.charAt(0).toUpperCase() + room_type.slice(1)} room fee updated to Rs.${amount.toLocaleString()}`);
+      setTimeout(() => setMsg(''), 3000);
+      load();
+    } catch (err) { setMsg(err.response?.data?.error || 'Failed'); }
+    finally { setSaving(''); }
+  };
+
+  const ROOM_INFO = {
+    single: { icon: '🛏', label: 'Single Room',      sub: 'Private — 1 student',          color: '#6366f1', bg: '#eef2ff', bd: '#a5b4fc' },
+    shared: { icon: '🛏', label: 'Shared Room',      sub: 'Shared — 2 students',          color: '#0ab8a0', bg: '#f0fdfb', bd: '#99e6da' },
+    double: { icon: '🛏', label: 'Double Room',      sub: 'Double — up to 4 students',    color: '#f59e0b', bg: '#fffbeb', bd: '#fcd34d' },
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 24 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>💰 Fee Schedule</div>
+      <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 20 }}>
+        Set monthly hostel fees per room type. Changes apply to new fee records generated next month.
+      </div>
+
+      {msg && (
+        <div style={{ background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#065f46', fontWeight: 600 }}>
+          ✓ {msg}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+        {['single','shared','double'].map(type => {
+          const info = ROOM_INFO[type];
+          const current = schedule.find(s => s.room_type === type)?.monthly_fee;
+          return (
+            <div key={type} style={{ background: info.bg, border: `1.5px solid ${info.bd}`, borderRadius: 'var(--radius)', padding: '16px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 20 }}>{info.icon}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: info.color }}>{info.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-4)' }}>{info.sub}</div>
+                </div>
+              </div>
+
+              {current && (
+                <div style={{ fontSize: 11, color: 'var(--text-4)', marginBottom: 8 }}>
+                  Current: <strong style={{ color: info.color }}>Rs.{Number(current).toLocaleString()}/mo</strong>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--text-4)', fontWeight: 600 }}>Rs.</span>
+                  <input
+                    type="number"
+                    value={editing[type] || ''}
+                    onChange={e => setEditing(prev => ({ ...prev, [type]: e.target.value }))}
+                    style={{ paddingLeft: 36, width: '100%', border: `1.5px solid ${info.bd}`, borderRadius: 8, padding: '8px 10px 8px 36px', fontSize: 14, fontWeight: 700, color: info.color, background: 'white', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                    min="0"
+                    step="500"
+                  />
+                </div>
+                <button
+                  onClick={() => save(type)}
+                  disabled={saving === type}
+                  style={{
+                    padding: '8px 14px', borderRadius: 8, border: 'none',
+                    background: info.color, color: 'white',
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'var(--font-ui)', opacity: saving === type ? 0.6 : 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {saving === type ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--bg-3)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-3)' }}>
+        ⚠ Note: Changing rates here updates the fee schedule table. Existing unpaid monthly fee records will not be retroactively changed — only new records generated from the next allocation will use the new rates.
+      </div>
+    </div>
+  );
+}
+
 // ── ADMIN: Manage Payments ────────────────────────────────────
 function AdminPayments() {
   const [payments, setPayments] = useState([]);
@@ -336,6 +448,8 @@ function AdminPayments() {
     <div>
       <div className="page-header"><h1>Payments</h1><p>Review and verify student payments</p></div>
       {msg.text && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
+
+      <FeeScheduleEditor />
 
       {/* Pending verification */}
       {pending.length > 0 && (
@@ -475,7 +589,7 @@ function AdminPayments() {
   );
 }
 
-// ── ROUTER ────────────────────────────────────────────────────
+
 export default function Payments({ user }) {
   if (!user) {
     try { user = JSON.parse(localStorage.getItem('hms_user')) || {}; } catch { user = {}; }
